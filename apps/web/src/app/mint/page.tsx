@@ -19,7 +19,7 @@ export default function MintPage() {
   const handleMint = () => {
     const validAttrs = attrs.filter(a => a.trait_type && a.value);
     const tokenURI = buildTokenURI({ name, description, image: imageUrl, ...(validAttrs.length > 0 && { attributes: validAttrs }) });
-    writeContract({ address: NFT_CONTRACT_ADDRESS, abi: STUD_NFT_ABI, functionName: "mint", args: [tokenURI], gas: BigInt(300_000) });
+    writeContract({ address: NFT_CONTRACT_ADDRESS, abi: STUD_NFT_ABI, functionName: "mint", args: [tokenURI], gas: BigInt(500_000) });
   };
 
   if (!isConnected) return (
