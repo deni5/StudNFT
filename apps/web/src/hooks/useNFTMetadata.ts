@@ -16,25 +16,17 @@ export interface NFTMetadata {
 
 function toPublicGateway(url: string): string {
   if (!url) return "";
-  // ipfs:// protocol
+  let hash = "";
   if (url.startsWith("ipfs://")) {
-    return url.replace("ipfs://", "https://ipfs.io/ipfs/");
+    hash = url.replace("ipfs://", "");
+  } else if (url.includes("/ipfs/")) {
+    hash = url.split("/ipfs/")[1];
+  } else if (url.match(/^(Qm[a-zA-Z0-9]{44}|baf[a-zA-Z0-9]+)$/)) {
+    hash = url;
+  } else {
+    return url;
   }
-  // Private Pinata gateway → public
-  if (url.includes(".mypinata.cloud/ipfs/")) {
-    const hash = url.split("/ipfs/")[1];
-    return `https://ipfs.io/ipfs/${hash}`;
-  }
-  // gateway.pinata.cloud → ipfs.io
-  if (url.includes("gateway.pinata.cloud/ipfs/")) {
-    const hash = url.split("/ipfs/")[1];
-    return `https://ipfs.io/ipfs/${hash}`;
-  }
-  // Raw IPFS hash (no protocol, no domain)
-  if (url.match(/^(Qm[a-zA-Z0-9]{44}|baf[a-zA-Z0-9]+)$/)) {
-    return `https://ipfs.io/ipfs/${url}`;
-  }
-  return url;
+  return `https://dweb.link/ipfs/${hash}`;
 }
 
 export function useNFTMetadata(tokenId: bigint) {
