@@ -7,6 +7,7 @@ const NAV = [
   { href: "/marketplace", label: "Marketplace" },
   { href: "/mint", label: "Mint" },
   { href: "/my-nfts", label: "My NFTs" },
+  { href: "/collection", label: "Collection" },
 ];
 
 export function Header() {
