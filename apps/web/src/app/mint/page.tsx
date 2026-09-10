@@ -5,6 +5,7 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { STUD_NFT_ABI, NFT_CONTRACT_ADDRESS } from "@/lib/contracts";
 import { buildTokenURI } from "@/lib/utils";
 import { TxStatus } from "@/components/TxStatus";
+import { MintGuide } from "@/components/MintGuide";
 
 export default function MintPage() {
   const { isConnected } = useAccount();
@@ -13,7 +14,7 @@ export default function MintPage() {
   const [imageUrl, setImageUrl] = useState("");
   const [attrs, setAttrs] = useState([{ trait_type: "", value: "" }]);
 
-  const { writeContract, data: hash, isPending, error } = useWriteContract();
+  const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
   const handleMint = () => {
@@ -24,14 +25,18 @@ export default function MintPage() {
 
   if (!isConnected) return (
     <div className="max-w-md mx-auto px-4 py-20 text-center">
-      <h1 className="text-2xl font-bold mb-4">Connect wallet to mint</h1>
+      <h1 className="text-2xl font-bold mb-4">Mint NFT</h1>
+      <p className="text-gray-500 mb-8">Підключіть гаманець щоб почати мінтинг.</p>
       <ConnectButton />
     </div>
   );
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
-      <h1 className="text-3xl font-extrabold text-gray-900 mb-8">Mint NFT</h1>
+      <h1 className="text-3xl font-extrabold text-gray-900 mb-6">Mint NFT</h1>
+
+      <MintGuide />
+
       <div className="card p-8 space-y-6">
         <div>
           <label className="label">Name *</label>
@@ -43,7 +48,7 @@ export default function MintPage() {
         </div>
         <div>
           <label className="label">Image URL</label>
-          <input className="input" placeholder="https://... or ipfs://..." value={imageUrl} onChange={e => setImageUrl(e.target.value)} />
+          <input className="input" placeholder="https://gateway.pinata.cloud/ipfs/..." value={imageUrl} onChange={e => setImageUrl(e.target.value)} />
           {imageUrl && (
             <div className="mt-3 rounded-xl overflow-hidden border border-gray-100 h-48 bg-gray-50">
               <img src={imageUrl} alt="Preview" className="w-full h-full object-contain" onError={e => (e.target as HTMLImageElement).style.display = "none"} />
@@ -55,7 +60,7 @@ export default function MintPage() {
           <div className="space-y-2">
             {attrs.map((a, i) => (
               <div key={i} className="flex gap-2">
-                <input className="input" placeholder="Trait" value={a.trait_type} onChange={e => setAttrs(prev => prev.map((x, j) => j === i ? { ...x, trait_type: e.target.value } : x))} />
+                <input className="input" placeholder="Trait (e.g. Author)" value={a.trait_type} onChange={e => setAttrs(prev => prev.map((x, j) => j === i ? { ...x, trait_type: e.target.value } : x))} />
                 <input className="input" placeholder="Value" value={a.value} onChange={e => setAttrs(prev => prev.map((x, j) => j === i ? { ...x, value: e.target.value } : x))} />
                 <button onClick={() => setAttrs(prev => prev.filter((_, j) => j !== i))} className="px-3 rounded-xl border border-gray-200 text-gray-400 hover:text-red-500">x</button>
               </div>
@@ -63,12 +68,15 @@ export default function MintPage() {
           </div>
           <button onClick={() => setAttrs(prev => [...prev, { trait_type: "", value: "" }])} className="mt-2 text-sm text-blue-500 font-medium">+ Add attribute</button>
         </div>
+
         <TxStatus hash={hash} isPending={isPending || isConfirming} isSuccess={isSuccess} isError={!!error} errorMessage={error?.message} label="Mint" />
+
         {isSuccess && (
           <div className="rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800">
             NFT minted! Go to <a href="/my-nfts" className="underline font-semibold">My NFTs</a> to view it.
           </div>
         )}
+
         <button onClick={handleMint} disabled={!name.trim() || isPending || isConfirming} className="btn-primary w-full py-3 text-base">
           {isPending || isConfirming ? "Minting..." : "Mint NFT"}
         </button>
