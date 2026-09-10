@@ -18,14 +18,14 @@ interface WalletNFT {
 
 function NFTCard({ nft }: { nft: WalletNFT }) {
   const isOurs = nft.contractAddress.toLowerCase() === NFT_CONTRACT_ADDRESS.toLowerCase();
-  const href = isOurs ? `/nft/${nft.tokenId}` : `https://sepolia.etherscan.io/token/${nft.contractAddress}?a=${nft.tokenId}`;
-  const isExternal = !isOurs;
+  const href = isOurs
+    ? `/nft/${nft.tokenId}`
+    : `https://sepolia.etherscan.io/token/${nft.contractAddress}?a=${nft.tokenId}`;
 
   return (
-    
+    <Link
       href={href}
-      target={isExternal ? "_blank" : undefined}
-      rel={isExternal ? "noopener noreferrer" : undefined}
+      target={!isOurs ? "_blank" : undefined}
       className="rounded-2xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-shadow overflow-hidden group block"
     >
       <div className="relative aspect-square bg-gray-50">
@@ -55,7 +55,7 @@ function NFTCard({ nft }: { nft: WalletNFT }) {
           <p className="text-xs text-gray-300 mt-0.5 truncate font-mono">{shortenAddress(nft.contractAddress)}</p>
         )}
       </div>
-    </a>
+    </Link>
   );
 }
 
@@ -85,7 +85,6 @@ export default function CollectionPage() {
 
   const studNFTs = nfts.filter(n => n.contractAddress.toLowerCase() === NFT_CONTRACT_ADDRESS.toLowerCase());
   const externalNFTs = nfts.filter(n => n.contractAddress.toLowerCase() !== NFT_CONTRACT_ADDRESS.toLowerCase());
-
   const filtered = filter === "all" ? nfts : filter === "studnft" ? studNFTs : externalNFTs;
 
   return (
@@ -98,7 +97,6 @@ export default function CollectionPage() {
         <Link href="/mint" className="btn-primary">+ Mint New</Link>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-8">
         <div className="card p-5 text-center">
           <p className="text-2xl font-extrabold text-blue-600">{loading ? "..." : nfts.length}</p>
@@ -114,7 +112,6 @@ export default function CollectionPage() {
         </div>
       </div>
 
-      {/* Filter */}
       <div className="flex gap-2 mb-6">
         {[
           { key: "all", label: "All" },
@@ -123,11 +120,9 @@ export default function CollectionPage() {
         ].map(({ key, label }) => (
           <button
             key={key}
-            onClick={() => setFilter(key as any)}
+            onClick={() => setFilter(key as "all" | "studnft" | "external")}
             className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-              filter === key
-                ? "bg-blue-500 text-white"
-                : "border border-gray-200 text-gray-600 hover:bg-gray-50"
+              filter === key ? "bg-blue-500 text-white" : "border border-gray-200 text-gray-600 hover:bg-gray-50"
             }`}
           >
             {label}
@@ -158,7 +153,9 @@ export default function CollectionPage() {
 
       {!loading && filtered.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {filtered.map((nft, i) => <NFTCard key={i} nft={nft} />)}
+          {filtered.map((nft, i) => (
+            <NFTCard key={i} nft={nft} />
+          ))}
         </div>
       )}
     </div>
