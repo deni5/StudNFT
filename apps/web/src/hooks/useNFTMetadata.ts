@@ -14,50 +14,77 @@ export interface NFTMetadata {
   attributes?: { trait_type: string; value: string }[];
 }
 
-function toPublicGateway(url: string): string {
+function extractHash(url: string): string | null {
+  if (!url) return null;
+  if (url.startsWith("ipfs://")) return url.replace("ipfs://", "");
+  if (url.includes("/ipfs/")) return url.split("/ipfs/")[1];
+  if (url.match(/^(Qm[a-zA-Z0-9]{44}|baf[a-zA-Z0-9]+)$/)) return url;
+  return null;
+}
+
+function toProxyUrl(url: string): string {
   if (!url) return "";
-  let hash = "";
-  if (url.startsWith("ipfs://")) {
-    hash = url.replace("ipfs://", "");
-  } else if (url.includes("/ipfs/")) {
-    hash = url.split("/ipfs/")[1];
-  } else if (url.match(/^(Qm[a-zA-Z0-9]{44}|baf[a-zA-Z0-9]+)$/)) {
-    hash = url;
-  } else {
-    return url;
-  }
-  return `https://dweb.link/ipfs/${hash}`;
+  const hash = extractHash(url);
+  if (hash) return `/api/ipfs/${hash}`;
+  return url;
 }
 
 export function useNFTMetadata(tokenId: bigint) {
   const [metadata, setMetadata] = useState<NFTMetadata | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const { data: owner } = useReadContract({ address: NFT_CONTRACT_ADDRESS, abi: STUD_NFT_ABI, functionName: "ownerOf", args: [tokenId] });
-  const { data: uri } = useReadContract({ address: NFT_CONTRACT_ADDRESS, abi: STUD_NFT_ABI, functionName: "tokenURI", args: [tokenId] });
+  const { data: owner } = useReadContract({ 
+    address: NFT_CONTRACT_ADDRESS, 
+    abi: STUD_NFT_ABI, 
+    functionName: "ownerOf", 
+    args: [tokenId] 
+  });
+  const { data: uri } = useReadContract({ 
+    address: NFT_CONTRACT_ADDRESS, 
+    abi: STUD_NFT_ABI, 
+    functionName: "tokenURI", 
+    args: [tokenId] 
+  });
 
   useEffect(() => {
     if (!owner || !uri) return;
     const parsed = parseTokenURI(uri as string);
     if (parsed) {
-      setMetadata({ tokenId, owner: owner as string, tokenURI: uri as string, ...parsed, image: toPublicGateway(parsed.image) });
+      setMetadata({ 
+        tokenId, 
+        owner: owner as string, 
+        tokenURI: uri as string, 
+        ...parsed, 
+        image: toProxyUrl(parsed.image) 
+      });
       setLoading(false);
       return;
     }
-    const fetchUri = toPublicGateway(uri as string);
-    fetch(fetchUri).then(r => r.json()).then(json => {
-      setMetadata({
-        tokenId,
-        owner: owner as string,
-        tokenURI: uri as string,
-        name: json.name ?? `NFT #${tokenId}`,
-        description: json.description ?? "",
-        image: toPublicGateway(json.image ?? ""),
-        attributes: json.attributes,
-      });
-    }).catch(() => {
-      setMetadata({ tokenId, owner: owner as string, tokenURI: uri as string, name: `NFT #${tokenId}`, description: "", image: "" });
-    }).finally(() => setLoading(false));
+    const fetchUri = toProxyUrl(uri as string);
+    fetch(fetchUri)
+      .then(r => r.json())
+      .then(json => {
+        setMetadata({
+          tokenId,
+          owner: owner as string,
+          tokenURI: uri as string,
+          name: json.name ?? `NFT #${tokenId}`,
+          description: json.description ?? "",
+          image: toProxyUrl(json.image ?? ""),
+          attributes: json.attributes,
+        });
+      })
+      .catch(() => {
+        setMetadata({ 
+          tokenId, 
+          owner: owner as string, 
+          tokenURI: uri as string, 
+          name: `NFT #${tokenId}`, 
+          description: "", 
+          image: "" 
+        });
+      })
+      .finally(() => setLoading(false));
   }, [owner, uri, tokenId]);
 
   return { metadata, loading };
