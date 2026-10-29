@@ -48,7 +48,7 @@ export default function MintPage() {
         </div>
         <div>
           <label className="label">Image URL</label>
-          <input className="input" placeholder="https://gateway.pinata.cloud/ipfs/..." value={imageUrl} onChange={e => setImageUrl(e.target.value)} />
+          <input className="input" placeholder="ipfs://bafkrei... або https://..." value={imageUrl} onChange={e => setImageUrl(e.target.value)} />
           {imageUrl && (
             <div className="mt-3 rounded-xl overflow-hidden border border-gray-100 h-48 bg-gray-50">
               <img src={imageUrl} alt="Preview" className="w-full h-full object-contain" onError={e => (e.target as HTMLImageElement).style.display = "none"} />

@@ -49,11 +49,11 @@ export function MintGuide() {
                 <li>Натисніть <strong>"Upload"</strong> → <strong>"File"</strong></li>
                 <li>Оберіть зображення з вашого комп'ютера (JPG, PNG, GIF, SVG)</li>
                 <li>Після завантаження натисніть на файл → скопіюйте <strong>CID</strong> (виглядає як <code className="bg-blue-100 px-1 rounded text-xs">bafkrei...</code>)</li>
-                <li>Сформуйте URL: <code className="bg-blue-100 px-1 rounded text-xs">https://gateway.pinata.cloud/ipfs/ВАШ_CID</code></li>
+                <li>Сформуйте URL: <code className="bg-blue-100 px-1 rounded text-xs">ipfs://ВАШ_CID</code></li>
               </ol>
               <div className="mt-3 bg-white rounded-xl p-3 border border-blue-100">
                 <p className="text-xs text-gray-500 font-medium mb-1">Приклад URL:</p>
-                <code className="text-xs text-blue-700 break-all">https://gateway.pinata.cloud/ipfs/bafkreiht5mhinyjglyzbroi7scxw2abzcbifqiewhy7tpusrz2655k43ty</code>
+                <code className="text-xs text-blue-700 break-all">ipfs://bafkreiht5mhinyjglyzbroi7scxw2abzcbifqiewhy7tpusrz2655k43ty</code>
               </div>
             </div>
           </div>
