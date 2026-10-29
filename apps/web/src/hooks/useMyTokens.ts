@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { NFT_CONTRACT_ADDRESS } from "@/lib/contracts";
 
 export function useMyTokens(address?: string) {
   const [tokenIds, setTokenIds] = useState<bigint[]>([]);
@@ -8,10 +9,16 @@ export function useMyTokens(address?: string) {
   useEffect(() => {
     if (!address) { setLoading(false); return; }
     setLoading(true);
-    fetch(`/api/my-tokens?address=${address}`)
+    // Use Alchemy API via our wallet-nfts endpoint
+    // Filter only StudNFT contract tokens
+    fetch(`/api/wallet-nfts?address=${address}`)
       .then(r => r.json())
       .then(data => {
-        setTokenIds((data.tokenIds ?? []).map((id: string) => BigInt(id)));
+        const studNFTs = (data.nfts ?? []).filter(
+          (n: any) => n.contractAddress.toLowerCase() === NFT_CONTRACT_ADDRESS.toLowerCase()
+        );
+        const ids = studNFTs.map((n: any) => BigInt(n.tokenId));
+        setTokenIds(ids);
       })
       .catch(() => setTokenIds([]))
       .finally(() => setLoading(false));
