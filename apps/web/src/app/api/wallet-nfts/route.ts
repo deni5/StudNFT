@@ -14,6 +14,24 @@ function toProxyUrl(url: string): string {
   return `https://studnft.vercel.app/api/ipfs/${hash}`;
 }
 
+async function fetchMetaFromUri(uri: string): Promise<{ name?: string; image?: string; description?: string } | null> {
+  try {
+    const url = uri.startsWith("ipfs://")
+      ? uri.replace("ipfs://", "https://cloudflare-ipfs.com/ipfs/")
+      : uri.includes("pinata.cloud")
+      ? uri.replace("gateway.pinata.cloud", "cloudflare-ipfs.com")
+      : uri;
+
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return null;
+    const contentType = res.headers.get("content-type") ?? "";
+    if (!contentType.includes("json")) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 export async function GET(request: NextRequest) {
   const address = request.nextUrl.searchParams.get("address");
   if (!address) return NextResponse.json({ nfts: [] });
@@ -27,52 +45,46 @@ export async function GET(request: NextRequest) {
 
     const nfts = await Promise.all((data.ownedNfts ?? []).map(async (nft: any) => {
       const rawId = nft.tokenId ?? nft.id?.tokenId ?? "0";
-      const tokenId = rawId.startsWith("0x")
-        ? parseInt(rawId, 16).toString()
-        : rawId;
-
+      const tokenId = rawId.startsWith("0x") ? parseInt(rawId, 16).toString() : rawId;
       const contractAddress = nft.contract?.address ?? "";
       const isOurs = contractAddress.toLowerCase() === STUD_NFT;
 
-      let name = nft.name ?? nft.rawMetadata?.name ?? `NFT #${tokenId}`;
+      let name = nft.name ?? nft.rawMetadata?.name ?? "";
       let image = nft.image?.cachedUrl ?? nft.image?.originalUrl ?? nft.rawMetadata?.image ?? "";
       let description = nft.description ?? nft.rawMetadata?.description ?? "";
 
-      // For our contract - fetch metadata from tokenURI via Alchemy
-      if (isOurs && (!image || name === `NFT #${tokenId}`)) {
-        try {
-          const metaRes = await fetch(
-            `${BASE_URL}/getNFTMetadata?contractAddress=${contractAddress}&tokenId=${tokenId}&refreshCache=false`,
-            { headers: { "Accept": "application/json" } }
-          );
-          const meta = await metaRes.json();
+      // Decode base64 on-chain URI for our contract
+      if (isOurs) {
+        const tokenUri = nft.tokenUri?.raw ?? nft.tokenUri?.gateway ?? "";
+        if (tokenUri.startsWith("data:application/json;base64,")) {
+          try {
+            const decoded = JSON.parse(
+              Buffer.from(tokenUri.replace("data:application/json;base64,", ""), "base64").toString("utf-8")
+            );
+            name = decoded.name ?? name;
+            image = decoded.image ?? image;
+            description = decoded.description ?? description;
+          } catch {}
+        }
+      }
 
-          // Try to decode base64 tokenURI
-          const tokenUri = meta.tokenUri?.raw ?? meta.tokenUri?.gateway ?? "";
-          if (tokenUri.startsWith("data:application/json;base64,")) {
-            try {
-              const decoded = JSON.parse(
-                Buffer.from(tokenUri.replace("data:application/json;base64,", ""), "base64").toString("utf-8")
-              );
-              name = decoded.name ?? name;
-              image = decoded.image ?? image;
-              description = decoded.description ?? description;
-            } catch {}
+      // For external NFTs — fetch tokenURI manually if image/name missing
+      if (!isOurs && (!image || !name)) {
+        const tokenUri = nft.tokenUri?.raw ?? nft.tokenUri?.gateway ?? "";
+        if (tokenUri) {
+          const meta = await fetchMetaFromUri(tokenUri);
+          if (meta) {
+            name = meta.name ?? name;
+            image = meta.image ?? image;
+            description = meta.description ?? description;
           }
-
-          if (!image) {
-            image = meta.rawMetadata?.image ?? meta.image?.cachedUrl ?? meta.image?.originalUrl ?? "";
-          }
-          if (name === `NFT #${tokenId}`) {
-            name = meta.rawMetadata?.name ?? meta.name ?? name;
-          }
-        } catch {}
+        }
       }
 
       return {
         contractAddress,
         tokenId,
-        name,
+        name: name || `NFT #${tokenId}`,
         description,
         image: toProxyUrl(image),
         collection: nft.contract?.name ?? (isOurs ? "StudNFT" : "Unknown"),
@@ -80,7 +92,7 @@ export async function GET(request: NextRequest) {
     }));
 
     return NextResponse.json({ nfts }, {
-      headers: { "Cache-Control": "public, max-age=30" }
+      headers: { "Cache-Control": "public, max-age=60" }
     });
   } catch (e) {
     return NextResponse.json({ nfts: [], error: String(e) });
