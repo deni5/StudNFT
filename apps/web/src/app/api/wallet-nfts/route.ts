@@ -14,14 +14,27 @@ export async function GET(request: NextRequest) {
     );
     const data = await res.json();
 
-    const nfts = (data.ownedNfts ?? []).map((nft: any) => ({
-      contractAddress: nft.contract?.address ?? "",
-      tokenId: nft.tokenId ?? "0",
-      name: nft.name ?? nft.rawMetadata?.name ?? `NFT #${nft.tokenId}`,
-      description: nft.description ?? nft.rawMetadata?.description ?? "",
-      image: nft.image?.cachedUrl ?? nft.image?.originalUrl ?? nft.rawMetadata?.image ?? "",
-      collection: nft.contract?.name ?? "Unknown",
-    }));
+    // Debug: log raw first item
+    if (data.ownedNfts?.length > 0) {
+      console.log("Raw NFT sample:", JSON.stringify(data.ownedNfts[0], null, 2));
+    }
+
+    const nfts = (data.ownedNfts ?? []).map((nft: any) => {
+      // tokenId can be hex string like "0x1a" or decimal string
+      const rawId = nft.tokenId ?? nft.id?.tokenId ?? "0";
+      const tokenId = rawId.startsWith("0x")
+        ? parseInt(rawId, 16).toString()
+        : rawId;
+
+      return {
+        contractAddress: nft.contract?.address ?? "",
+        tokenId,
+        name: nft.name ?? nft.rawMetadata?.name ?? `NFT #${tokenId}`,
+        description: nft.description ?? nft.rawMetadata?.description ?? "",
+        image: nft.image?.cachedUrl ?? nft.image?.originalUrl ?? nft.rawMetadata?.image ?? "",
+        collection: nft.contract?.name ?? "Unknown",
+      };
+    });
 
     return NextResponse.json({ nfts }, {
       headers: { "Cache-Control": "public, max-age=30" }
