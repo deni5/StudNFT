@@ -33,33 +33,42 @@ export function useNFTMetadata(tokenId: bigint) {
   const [metadata, setMetadata] = useState<NFTMetadata | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const { data: owner } = useReadContract({ 
-    address: NFT_CONTRACT_ADDRESS, 
-    abi: STUD_NFT_ABI, 
-    functionName: "ownerOf", 
-    args: [tokenId] 
+  // Reset metadata when tokenId changes
+  useEffect(() => {
+    setMetadata(null);
+    setLoading(true);
+  }, [tokenId]);
+
+  const { data: owner } = useReadContract({
+    address: NFT_CONTRACT_ADDRESS,
+    abi: STUD_NFT_ABI,
+    functionName: "ownerOf",
+    args: [tokenId],
   });
-  const { data: uri } = useReadContract({ 
-    address: NFT_CONTRACT_ADDRESS, 
-    abi: STUD_NFT_ABI, 
-    functionName: "tokenURI", 
-    args: [tokenId] 
+
+  const { data: uri } = useReadContract({
+    address: NFT_CONTRACT_ADDRESS,
+    abi: STUD_NFT_ABI,
+    functionName: "tokenURI",
+    args: [tokenId],
   });
 
   useEffect(() => {
     if (!owner || !uri) return;
+
     const parsed = parseTokenURI(uri as string);
     if (parsed) {
-      setMetadata({ 
-        tokenId, 
-        owner: owner as string, 
-        tokenURI: uri as string, 
-        ...parsed, 
-        image: toProxyUrl(parsed.image) 
+      setMetadata({
+        tokenId,
+        owner: owner as string,
+        tokenURI: uri as string,
+        ...parsed,
+        image: toProxyUrl(parsed.image),
       });
       setLoading(false);
       return;
     }
+
     const fetchUri = toProxyUrl(uri as string);
     fetch(fetchUri)
       .then(r => r.json())
@@ -75,13 +84,13 @@ export function useNFTMetadata(tokenId: bigint) {
         });
       })
       .catch(() => {
-        setMetadata({ 
-          tokenId, 
-          owner: owner as string, 
-          tokenURI: uri as string, 
-          name: `NFT #${tokenId}`, 
-          description: "", 
-          image: "" 
+        setMetadata({
+          tokenId,
+          owner: owner as string,
+          tokenURI: uri as string,
+          name: `NFT #${tokenId}`,
+          description: "",
+          image: "",
         });
       })
       .finally(() => setLoading(false));
