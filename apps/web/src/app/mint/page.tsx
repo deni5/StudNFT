@@ -47,7 +47,7 @@ export default function MintPage() {
           <textarea className="input resize-none" rows={3} placeholder="Describe your NFT..." value={description} onChange={e => setDescription(e.target.value)} />
         </div>
         <div>
-          <label className="label">Image URL</label>
+          <label className="label">Image CID / URL</label>
           <input className="input" placeholder="ipfs://bafkrei... або https://..." value={imageUrl} onChange={e => setImageUrl(e.target.value)} />
           {imageUrl && (
             <div className="mt-3 rounded-xl overflow-hidden border border-gray-100 h-48 bg-gray-50">
