@@ -16,7 +16,7 @@ export function useMyTokens(address?: string) {
     if (!address) { setLoading(false); return; }
     setLoading(true);
     // Data comes from our /api/wallet-nfts (Alchemy); only StudNFT tokens, newest first
-    fetch(`/api/wallet-nfts?address=${address}`)
+    fetch(`/api/wallet-nfts?address=${address}&all=1`)
       .then(r => r.json())
       .then(data => {
         const list: MyTokenItem[] = (data.nfts ?? [])
