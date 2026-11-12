@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const ALCHEMY_KEY = "alch_4UumlkeRYhf8v5LyXZ6aW";
+const ALCHEMY_KEY = process.env.ALCHEMY_API_KEY ?? "";
 const BASE_URL = `https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_KEY}`;
 const STUD_NFT = "0x19a9d64fe37e02f7a07f3749fc1c58a6bcea5e77";
 
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       try {
         data = JSON.parse(text);
       } catch {
-        return NextResponse.json({ nfts: [], error: `Alchemy ${res.status}: ${text.slice(0, 300)}`, url: url.replace(ALCHEMY_KEY, "***") });
+        return NextResponse.json({ nfts: [], error: `Alchemy ${res.status}: ${text.slice(0, 300)}`, url: ALCHEMY_KEY ? url.replace(ALCHEMY_KEY, "***") : url });
       }
       ownedNfts.push(...(data.ownedNfts ?? []));
       pageKey = data.pageKey;
