@@ -121,7 +121,7 @@ export default function MarketplacePage() {
         functionName: "buyNFT",
         args: [listing.listingId],
         value: listing.price,
-        gas: BigInt(300_000),
+        gas: BigInt(900_000),
       },
       {
         onSuccess: () => {

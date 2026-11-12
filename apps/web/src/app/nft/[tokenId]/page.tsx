@@ -47,19 +47,19 @@ export default function NFTDetailPage({ params }: { params: { tokenId: string } 
   const handleList = () => {
     if (!listPrice) return;
     reset();
-    writeContract({ address: MARKETPLACE_CONTRACT_ADDRESS, abi: MARKETPLACE_ABI, functionName: "listNFT", args: [NFT_CONTRACT_ADDRESS, tokenId, parseEther(listPrice)], gas: BigInt(600_000) }, { onSuccess: () => refetchListings() });
+    writeContract({ address: MARKETPLACE_CONTRACT_ADDRESS, abi: MARKETPLACE_ABI, functionName: "listNFT", args: [NFT_CONTRACT_ADDRESS, tokenId, parseEther(listPrice)], gas: BigInt(1_200_000) }, { onSuccess: () => refetchListings() });
   };
 
   const handleCancel = () => {
     if (!activeListing) return;
     reset();
-    writeContract({ address: MARKETPLACE_CONTRACT_ADDRESS, abi: MARKETPLACE_ABI, functionName: "cancelListing", args: [activeListing.listingId], gas: BigInt(150_000) }, { onSuccess: () => refetchListings() });
+    writeContract({ address: MARKETPLACE_CONTRACT_ADDRESS, abi: MARKETPLACE_ABI, functionName: "cancelListing", args: [activeListing.listingId], gas: BigInt(300_000) }, { onSuccess: () => refetchListings() });
   };
 
   const handleBuy = () => {
     if (!activeListing) return;
     reset();
-    writeContract({ address: MARKETPLACE_CONTRACT_ADDRESS, abi: MARKETPLACE_ABI, functionName: "buyNFT", args: [activeListing.listingId], value: activeListing.price, gas: BigInt(500_000) }, { onSuccess: () => refetchListings() });
+    writeContract({ address: MARKETPLACE_CONTRACT_ADDRESS, abi: MARKETPLACE_ABI, functionName: "buyNFT", args: [activeListing.listingId], value: activeListing.price, gas: BigInt(900_000) }, { onSuccess: () => refetchListings() });
   };
 
   return (
