@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export const maxDuration = 30;
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 const ALCHEMY_KEY = process.env.ALCHEMY_API_KEY ?? "";
 const BASE_URL = `https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_KEY}`;
