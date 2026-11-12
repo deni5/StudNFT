@@ -46,7 +46,13 @@ export async function GET(request: NextRequest) {
         (all ? "" : `&contractAddresses[]=${STUD_NFT}`) +
         (pageKey ? `&pageKey=${encodeURIComponent(pageKey)}` : "");
       const res = await fetch(url, { headers: { "Accept": "application/json" } });
-      const data = await res.json();
+      const text = await res.text();
+      let data: any;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        return NextResponse.json({ nfts: [], error: `Alchemy ${res.status}: ${text.slice(0, 300)}`, url: url.replace(ALCHEMY_KEY, "***") });
+      }
       ownedNfts.push(...(data.ownedNfts ?? []));
       pageKey = data.pageKey;
       if (!pageKey) break;
