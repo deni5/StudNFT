@@ -115,13 +115,32 @@ export async function GET(request: NextRequest) {
         nfts.filter((n: any) => n.contractAddress.toLowerCase() === STUD_NFT).map((n: any) => String(n.tokenId))
       );
       let rpcUrl = BASE_URL;
-      const rpc = async (body: any) =>
-        (await fetch(rpcUrl, {
+      const RPCS = [BASE_URL, "https://ethereum-sepolia-rpc.publicnode.com"];
+      const post = async (u: string, body: any) =>
+        (await fetch(u, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(body),
           signal: AbortSignal.timeout(8000),
         })).json();
+      const rpc = async (body: any) => {
+        if (!Array.isArray(body)) return post(rpcUrl, body);
+        const merged: any[] = body.map((b: any) => ({ id: b.id }));
+        for (const u of [rpcUrl, ...RPCS.filter((x) => x !== rpcUrl)]) {
+          const pending = body.filter((b: any) => !merged.find((m: any) => m.id === b.id)?.result);
+          if (!pending.length) break;
+          try {
+            const r = await post(u, pending);
+            for (const item of Array.isArray(r) ? r : []) {
+              if (item?.result) {
+                const m = merged.find((x: any) => x.id === item.id);
+                if (m) m.result = item.result;
+              }
+            }
+          } catch {}
+        }
+        return merged;
+      };
       const pad = (n: bigint) => n.toString(16).padStart(64, "0");
       const supQ = { jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to: STUD_NFT, data: "0x18160ddd" }, "latest"] };
       let supply = -1;
@@ -135,7 +154,7 @@ export async function GET(request: NextRequest) {
       if (supply < 0) throw new Error("no rpc available");
       suppErr = "supply=" + supply + " rpc=" + rpcUrl.slice(8, 30);
       const cand: number[] = [];
-      for (let i = Math.max(0, supply - 30); i <= supply; i++) if (!known.has(String(i))) cand.push(i);
+      for (let i = Math.max(0, supply - 30); i <= supply + 10; i++) if (!known.has(String(i))) cand.push(i);
       if (cand.length) {
         const owners = await rpc(
           cand.map((i, k) => ({ jsonrpc: "2.0", id: k, method: "eth_call", params: [{ to: STUD_NFT, data: "0x6352211e" + pad(BigInt(i)) }, "latest"] }))
