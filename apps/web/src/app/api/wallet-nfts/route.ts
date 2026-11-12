@@ -114,17 +114,26 @@ export async function GET(request: NextRequest) {
       const known = new Set(
         nfts.filter((n: any) => n.contractAddress.toLowerCase() === STUD_NFT).map((n: any) => String(n.tokenId))
       );
+      let rpcUrl = BASE_URL;
       const rpc = async (body: any) =>
-        (await fetch(BASE_URL, {
+        (await fetch(rpcUrl, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(body),
           signal: AbortSignal.timeout(8000),
         })).json();
       const pad = (n: bigint) => n.toString(16).padStart(64, "0");
-      const sup = await rpc({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to: STUD_NFT, data: "0x18160ddd" }, "latest"] });
-      const supply = Number(BigInt(sup.result));
-      suppErr = "supply=" + supply;
+      const supQ = { jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to: STUD_NFT, data: "0x18160ddd" }, "latest"] };
+      let supply = -1;
+      for (const u of [BASE_URL, "https://ethereum-sepolia-rpc.publicnode.com"]) {
+        try {
+          const r = await (await fetch(u, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(supQ), signal: AbortSignal.timeout(6000) })).json();
+          const v = Number(BigInt(r.result));
+          if (v > supply) { supply = v; rpcUrl = u; }
+        } catch {}
+      }
+      if (supply < 0) throw new Error("no rpc available");
+      suppErr = "supply=" + supply + " rpc=" + rpcUrl.slice(8, 30);
       const cand: number[] = [];
       for (let i = Math.max(0, supply - 30); i <= supply; i++) if (!known.has(String(i))) cand.push(i);
       if (cand.length) {
