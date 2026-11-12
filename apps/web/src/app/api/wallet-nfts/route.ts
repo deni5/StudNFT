@@ -108,6 +108,7 @@ export async function GET(request: NextRequest) {
       };
     }));
 
+    let suppErr = "";
     // Supplement with freshly minted tokens that Alchemy has not indexed yet
     try {
       const known = new Set(
@@ -123,6 +124,7 @@ export async function GET(request: NextRequest) {
       const pad = (n: bigint) => n.toString(16).padStart(64, "0");
       const sup = await rpc({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to: STUD_NFT, data: "0x18160ddd" }, "latest"] });
       const supply = Number(BigInt(sup.result));
+      suppErr = "supply=" + supply;
       const cand: number[] = [];
       for (let i = Math.max(0, supply - 30); i <= supply; i++) if (!known.has(String(i))) cand.push(i);
       if (cand.length) {
@@ -133,6 +135,7 @@ export async function GET(request: NextRequest) {
           const r = Array.isArray(owners) ? owners.find((o: any) => o.id === k) : null;
           return r?.result && ("0x" + r.result.slice(26)).toLowerCase() === address.toLowerCase();
         });
+        suppErr += " cand=" + cand.length + " mine=" + mine.length;
         if (mine.length) {
           const uris = await rpc(
             mine.map((i, k) => ({ jsonrpc: "2.0", id: k, method: "eth_call", params: [{ to: STUD_NFT, data: "0xc87b56dd" + pad(BigInt(i)) }, "latest"] }))
@@ -160,12 +163,12 @@ export async function GET(request: NextRequest) {
           });
         }
       }
-    } catch {}
+    } catch (e) { suppErr += " ERR " + String(e); }
 
     nfts.sort((a: any, b: any) =>
       Number(b.contractAddress.toLowerCase() === STUD_NFT) - Number(a.contractAddress.toLowerCase() === STUD_NFT)
     );
-    return NextResponse.json({ nfts }, {
+    return NextResponse.json({ nfts, ...(request.nextUrl.searchParams.get("debug") === "1" ? { suppErr } : {}) }, {
       headers: { "Cache-Control": "public, max-age=15" }
     });
   } catch (e) {
