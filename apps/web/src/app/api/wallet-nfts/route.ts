@@ -108,6 +108,60 @@ export async function GET(request: NextRequest) {
       };
     }));
 
+    // Supplement with freshly minted tokens that Alchemy has not indexed yet
+    try {
+      const known = new Set(
+        nfts.filter((n: any) => n.contractAddress.toLowerCase() === STUD_NFT).map((n: any) => String(n.tokenId))
+      );
+      const rpc = async (body: any) =>
+        (await fetch(BASE_URL, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(8000),
+        })).json();
+      const pad = (n: bigint) => n.toString(16).padStart(64, "0");
+      const sup = await rpc({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to: STUD_NFT, data: "0x18160ddd" }, "latest"] });
+      const supply = Number(BigInt(sup.result));
+      const cand: number[] = [];
+      for (let i = Math.max(0, supply - 30); i <= supply; i++) if (!known.has(String(i))) cand.push(i);
+      if (cand.length) {
+        const owners = await rpc(
+          cand.map((i, k) => ({ jsonrpc: "2.0", id: k, method: "eth_call", params: [{ to: STUD_NFT, data: "0x6352211e" + pad(BigInt(i)) }, "latest"] }))
+        );
+        const mine = cand.filter((_, k) => {
+          const r = Array.isArray(owners) ? owners.find((o: any) => o.id === k) : null;
+          return r?.result && ("0x" + r.result.slice(26)).toLowerCase() === address.toLowerCase();
+        });
+        if (mine.length) {
+          const uris = await rpc(
+            mine.map((i, k) => ({ jsonrpc: "2.0", id: k, method: "eth_call", params: [{ to: STUD_NFT, data: "0xc87b56dd" + pad(BigInt(i)) }, "latest"] }))
+          );
+          mine.forEach((i, k) => {
+            try {
+              const r = uris.find((o: any) => o.id === k);
+              const b = Buffer.from(r.result.slice(2), "hex");
+              const len = Number(BigInt("0x" + b.subarray(32, 64).toString("hex")));
+              const uri = b.subarray(64, 64 + len).toString("utf-8");
+              let name = "", description = "", image = "";
+              if (uri.startsWith("data:application/json;base64,")) {
+                const j = JSON.parse(Buffer.from(uri.replace("data:application/json;base64,", ""), "base64").toString("utf-8"));
+                name = j.name ?? ""; description = j.description ?? ""; image = j.image ?? "";
+              }
+              nfts.push({
+                contractAddress: STUD_NFT,
+                tokenId: String(i),
+                name: name || `NFT #${i}`,
+                description,
+                image: toProxyUrl(image),
+                collection: "StudNFT",
+              });
+            } catch {}
+          });
+        }
+      }
+    } catch {}
+
     nfts.sort((a: any, b: any) =>
       Number(b.contractAddress.toLowerCase() === STUD_NFT) - Number(a.contractAddress.toLowerCase() === STUD_NFT)
     );
