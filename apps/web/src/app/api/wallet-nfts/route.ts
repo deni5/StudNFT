@@ -37,13 +37,22 @@ export async function GET(request: NextRequest) {
   if (!address) return NextResponse.json({ nfts: [] });
 
   try {
-    const res = await fetch(
-      `${BASE_URL}/getNFTsForOwner?owner=${address}&withMetadata=true&pageSize=100`,
-      { headers: { "Accept": "application/json" } }
-    );
-    const data = await res.json();
+    const all = request.nextUrl.searchParams.get("all") === "1";
+    const ownedNfts: any[] = [];
+    let pageKey: string | undefined;
+    for (let page = 0; page < 10; page++) {
+      const url =
+        `${BASE_URL}/getNFTsForOwner?owner=${address}&withMetadata=true&pageSize=100` +
+        (all ? "" : `&contractAddresses[]=${STUD_NFT}`) +
+        (pageKey ? `&pageKey=${encodeURIComponent(pageKey)}` : "");
+      const res = await fetch(url, { headers: { "Accept": "application/json" } });
+      const data = await res.json();
+      ownedNfts.push(...(data.ownedNfts ?? []));
+      pageKey = data.pageKey;
+      if (!pageKey) break;
+    }
 
-    const nfts = await Promise.all((data.ownedNfts ?? []).map(async (nft: any) => {
+    const nfts = await Promise.all(ownedNfts.map(async (nft: any) => {
       const rawId = nft.tokenId ?? nft.id?.tokenId ?? "0";
       const tokenId = rawId.startsWith("0x") ? parseInt(rawId, 16).toString() : rawId;
       const contractAddress = nft.contract?.address ?? "";
@@ -92,7 +101,7 @@ export async function GET(request: NextRequest) {
     }));
 
     return NextResponse.json({ nfts }, {
-      headers: { "Cache-Control": "public, max-age=60" }
+      headers: { "Cache-Control": "public, max-age=15" }
     });
   } catch (e) {
     return NextResponse.json({ nfts: [], error: String(e) });
