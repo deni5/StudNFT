@@ -68,7 +68,7 @@ export default function CollectionPage() {
   useEffect(() => {
     if (!address) { setLoading(false); return; }
     setLoading(true);
-    fetch(`/api/wallet-nfts?address=${address}`)
+    fetch(`/api/wallet-nfts?address=${address}&all=1`)
       .then(r => r.json())
       .then(data => setNfts(data.nfts ?? []))
       .catch(() => setNfts([]))

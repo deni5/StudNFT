@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+export const maxDuration = 30;
+
 const ALCHEMY_KEY = process.env.ALCHEMY_API_KEY ?? "";
 const BASE_URL = `https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_KEY}`;
 const STUD_NFT = "0x19a9d64fe37e02f7a07f3749fc1c58a6bcea5e77";
@@ -106,6 +108,9 @@ export async function GET(request: NextRequest) {
       };
     }));
 
+    nfts.sort((a: any, b: any) =>
+      Number(b.contractAddress.toLowerCase() === STUD_NFT) - Number(a.contractAddress.toLowerCase() === STUD_NFT)
+    );
     return NextResponse.json({ nfts }, {
       headers: { "Cache-Control": "public, max-age=15" }
     });
