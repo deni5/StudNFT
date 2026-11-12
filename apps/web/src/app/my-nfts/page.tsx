@@ -10,8 +10,9 @@ import { formatEth, shortenAddress } from "@/lib/utils";
 
 interface Listing { listingId: bigint; nftContract: `0x${string}`; tokenId: bigint; seller: `0x${string}`; price: bigint; active: boolean; }
 
-function NFTTile({ tokenId, listing }: { tokenId: bigint; listing?: Listing }) {
-  const { metadata, loading } = useNFTMetadata(tokenId);
+function NFTTile({ tokenId, name, image, listing }: { tokenId: bigint; name?: string; image?: string; listing?: Listing }) {
+  const metadata = { name, image };
+  const loading = false;
   if (loading) return <div className="rounded-2xl border border-gray-100 bg-white animate-pulse overflow-hidden"><div className="aspect-square bg-gray-100" /><div className="p-4 h-16" /></div>;
   return (
     <Link href={`/nft/${tokenId}`} className="rounded-2xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-shadow overflow-hidden group block">
@@ -30,7 +31,7 @@ function NFTTile({ tokenId, listing }: { tokenId: bigint; listing?: Listing }) {
 
 export default function MyNFTsPage() {
   const { address, isConnected } = useAccount();
-  const { tokenIds, loading: tokensLoading } = useMyTokens(address);
+  const { tokenIds, items, loading: tokensLoading } = useMyTokens(address);
 
   const { data: userListingsRaw } = useReadContract({
     address: MARKETPLACE_CONTRACT_ADDRESS,
@@ -89,7 +90,7 @@ export default function MyNFTsPage() {
         <section className="mb-10">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Collection ({tokenIds.length})</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {tokenIds.map(id => <NFTTile key={id.toString()} tokenId={id} listing={listingByTokenId.get(id.toString())} />)}
+            {items.map(it => <NFTTile key={it.tokenId.toString()} tokenId={it.tokenId} name={it.name} image={it.image} listing={listingByTokenId.get(it.tokenId.toString())} />)}
           </div>
         </section>
       )}
