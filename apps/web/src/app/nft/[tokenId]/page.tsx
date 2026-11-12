@@ -41,13 +41,13 @@ export default function NFTDetailPage({ params }: { params: { tokenId: string } 
 
   const handleApprove = () => {
     reset();
-    writeContract({ address: NFT_CONTRACT_ADDRESS, abi: STUD_NFT_ABI, functionName: "setApprovalForAll", args: [MARKETPLACE_CONTRACT_ADDRESS, true], gas: BigInt(100_000) }, { onSuccess: () => refetchApproval() });
+    writeContract({ address: NFT_CONTRACT_ADDRESS, abi: STUD_NFT_ABI, functionName: "setApprovalForAll", args: [MARKETPLACE_CONTRACT_ADDRESS, true], gas: BigInt(200_000) }, { onSuccess: () => refetchApproval() });
   };
 
   const handleList = () => {
     if (!listPrice) return;
     reset();
-    writeContract({ address: MARKETPLACE_CONTRACT_ADDRESS, abi: MARKETPLACE_ABI, functionName: "listNFT", args: [NFT_CONTRACT_ADDRESS, tokenId, parseEther(listPrice)], gas: BigInt(300_000) }, { onSuccess: () => refetchListings() });
+    writeContract({ address: MARKETPLACE_CONTRACT_ADDRESS, abi: MARKETPLACE_ABI, functionName: "listNFT", args: [NFT_CONTRACT_ADDRESS, tokenId, parseEther(listPrice)], gas: BigInt(600_000) }, { onSuccess: () => refetchListings() });
   };
 
   const handleCancel = () => {
