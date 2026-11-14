@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 const NAV = [
   { href: "/marketplace", label: "Marketplace" },
   { href: "/contest", label: "Contest" },
-  { href: "/contest", label: "Contest" },
   { href: "/mint", label: "Mint" },
   { href: "/my-nfts", label: "My NFTs" },
   { href: "/collection", label: "Collection" },
